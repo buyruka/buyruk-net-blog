@@ -1,0 +1,60 @@
+name: Archive buyruk.net/blog
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/crawl.yml', 'scripts/**']
+permissions:
+  contents: write
+concurrency:
+  group: crawl
+  cancel-in-progress: false
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      START_URLS: >-
+        http://buyruk.net/blog/
+        http://buyruk.net/blog/feed/
+      NO_PARENT: "1"
+      DOMAINS: buyruk.net,www.buyruk.net,blog.buyruk.net
+      HOSTS: buyruk.net,www.buyruk.net,blog.buyruk.net
+      ORIGIN: http://buyruk.net
+      REJECT_REGEX: '/wp-login\.php|/wp-admin/|/xmlrpc\.php|/wp-json/|/wp-cron\.php|[?&](replytocom|share|s|p|page_id|attachment_id|preview|amp|doing_wp_cron)=|/trackback/?$|\.mp3$|/backup-60efd/|/wp-content/upgrade/'
+      KEEP_FEEDS: /blog/feed/
+      SEARCH_SITE: buyruk.net
+      REDIRECTS: |
+        / /blog/ 302
+        /index.php /blog/ 302
+      HEADERS: |
+        /blog/feed/
+          Content-Type: application/rss+xml; charset=UTF-8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the old server answers
+        run: curl -sS -o /dev/null -w "blog HTTP %{http_code}, %{size_download} bytes\n" -A "Mozilla/5.0 site-owner-archive" http://buyruk.net/blog/
+      - name: Mirror the blog (polite pace)
+        run: bash scripts/crawl.sh
+      - name: Keep the blog's own "page not found" page
+        run: |
+          mkdir -p crawl/buyruk.net
+          curl -sS -A "Mozilla/5.0 site-owner-archive" -o crawl/buyruk.net/404.html http://buyruk.net/blog/bu-sayfa-yok-404-arsiv/ || true
+      - name: Turn the mirror into a static site
+        run: python3 scripts/postprocess.py
+      - name: Keep the logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crawl-logs
+          path: |
+            crawl.log
+            crawl-report.md
+            oversize/
+      - name: Commit the archive
+        run: |
+          git config user.name "archive-bot"
+          git config user.email "archive-bot@users.noreply.github.com"
+          git add site crawl-report.md
+          git commit -q -m "Static archive of buyruk.net/blog ($(date -u +%Y-%m-%d))" || echo "nothing new to commit"
+          git push
