@@ -8,6 +8,9 @@ UA="${UA:-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, l
 REJECT_REGEX="${REJECT_REGEX:-/wp-login\.php|/wp-admin/|/xmlrpc\.php|/wp-json/|/wp-cron\.php|[?&](replytocom|share|s|p|page_id|attachment_id|preview|amp|doing_wp_cron)=|/trackback/?$|\.mp3$}"
 
 mkdir -p crawl
+# heartbeat: show progress in the job log every minute
+( while sleep 60; do echo "[progress $(date -u +%H:%M)] $(find crawl -type f | wc -l) files, $(du -sh crawl 2>/dev/null | cut -f1); last: $(tail -n 1 crawl.log 2>/dev/null | cut -c1-160)"; done ) &
+HEARTBEAT=$!
 set -x
 wget --mirror --page-requisites --adjust-extension \
   --span-hosts --domains="$DOMAINS" \
@@ -20,6 +23,7 @@ wget --mirror --page-requisites --adjust-extension \
   $START_URLS 2> crawl.log
 code=$?
 set +x
+kill $HEARTBEAT 2>/dev/null || true
 echo "wget finished with exit code $code (8 just means some links returned errors such as 404)"
 echo "Files fetched: $(grep -c ' URL:' crawl.log || true)"
 echo "Errors logged: $(grep -ciE 'ERROR [0-9]{3}' crawl.log || true)"
