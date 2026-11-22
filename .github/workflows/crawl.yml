@@ -21,7 +21,9 @@ jobs:
       DOMAINS: buyruk.net,www.buyruk.net,blog.buyruk.net
       HOSTS: buyruk.net,www.buyruk.net,blog.buyruk.net
       ORIGIN: http://buyruk.net
-      REJECT_REGEX: '/wp-login\.php|/wp-admin/|/xmlrpc\.php|/wp-json/|/wp-cron\.php|[?&](replytocom|share|s|p|page_id|attachment_id|preview|amp|doing_wp_cron)=|/trackback/?$|\.mp3$|/backup-60efd/|/wp-content/upgrade/'
+      # Skips: WordPress admin/API URLs, the stats page's ~2,000 spam "?stats_author=" variants,
+      # backups, and anything on buyruk.net outside /blog/ and /images/ (personal files in /files/, /foto/ gallery).
+      REJECT_REGEX: '/wp-login\.php|/wp-admin/|/xmlrpc\.php|/wp-json/|/wp-cron\.php|[?&](replytocom|share|s|p|page_id|attachment_id|preview|amp|doing_wp_cron|stats_author)=|/trackback/?$|\.mp3$|/backup-60efd/|/wp-content/upgrade/|^https?://([a-z0-9-]+\.)*buyruk\.net(:[0-9]+)?/([^bi]|b([^l]|l([^o]|o([^g]|g[^/])))|i([^m]|m([^a]|a([^g]|g([^e]|e([^s]|s[^/]))))))'
       KEEP_FEEDS: /blog/feed/
       SEARCH_SITE: buyruk.net
       REDIRECTS: |
