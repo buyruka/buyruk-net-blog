@@ -44,6 +44,13 @@ jobs:
           curl -sS -A "Mozilla/5.0 site-owner-archive" -o crawl/buyruk.net/404.html http://buyruk.net/blog/bu-sayfa-yok-404-arsiv/ || true
       - name: Turn the mirror into a static site
         run: python3 scripts/postprocess.py
+      - name: Remove comment spam posted after the last post (29 Mar 2014) and the dead comment form
+        env:
+          SPAM_MIN_COMMENT_ID: "80987"   # first comment id after 2014-03-29; every later comment is spam
+          DROP_WIDGETS: recent-comments
+          REMOVE_COMMENT_FORM: "1"
+          DROP_STATS_MEMBERS: "1"
+        run: python3 scripts/strip_spam.py
       - name: Keep the logs
         if: always()
         uses: actions/upload-artifact@v4
