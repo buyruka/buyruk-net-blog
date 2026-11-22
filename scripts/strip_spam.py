@@ -25,6 +25,8 @@ STATS = os.environ.get('DROP_STATS_MEMBERS') == '1'
 ARTICLE = re.compile(r'<article id="comment-(\d+)"')
 TOKENS = re.compile(r'<ul class="children">|</ul><!-- \.children -->|</li><!-- #comment-## -->')
 RESPOND = re.compile(r'<div id="respond"[^>]*>.*?</div><!-- #respond -->', re.S)
+LEAVE_RESPONSE = re.compile(r'<p>\s*You can\s*<a href="#respond">leave a response</a>'
+                            r'(?:[^<]|<a\b[^>]*>[^<]*</a>)*?from your own site\.\s*</p>')
 STATS_RE = re.compile(r'<h2>Comments&#8217; Members Stats</h2>.*?</ol>', re.S)
 COMMENT_PAGE = re.compile(r'^(.*/)comment-page-\d+/index\.html$')
 MARKER = '<!--comments-section-removed-->'
@@ -92,6 +94,8 @@ for p in sorted(SITE.rglob('*.html')):
     if FORM:
         h, n = RESPOND.subn('', h)
         stats['forms'] += n
+        h, _ = drop_by_id(h, 'respond')  # the theme's now-empty wrapper around the form
+        h = LEAVE_RESPONSE.sub('', h)    # "You can leave a response, or trackback from your own site."
     if MIN_ID is not None and ARTICLE.search(h):
         h, n = strip_comments(h)
         stats['comments'] += n
